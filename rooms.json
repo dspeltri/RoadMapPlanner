@@ -1,0 +1,20 @@
+{
+  "default-room": {
+    "id": "default-room",
+    "roadmap": null,
+    "iterations": [],
+    "features": [
+      {
+        "id": "feat_hrtk7s8",
+        "roadmapId": "roadmap_default-room",
+        "name": "asdasd",
+        "type": "Feature",
+        "estimate": "",
+        "priority": "",
+        "description": "",
+        "iterationIds": []
+      }
+    ],
+    "updatedAt": "2026-05-27T15:07:11.665Z"
+  }
+}
