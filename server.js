@@ -1,53 +1,19 @@
-const fs = require("fs");
 const path = require("path");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 
+const {
+  loadRooms,
+  getOrCreateRoom,
+  updateRoom,
+  getRooms
+} = require("./roomStore");
+
 const PORT = process.env.PORT || 3000;
-const ROOMS_FILE = path.join(__dirname, "rooms.json");
 
-// ---- In-memory rooms state ----
-/** @type {Record<string, any>} */
-let rooms = {};
-
-// Load persisted state on startup
-function loadRooms() {
-  try {
-    if (fs.existsSync(ROOMS_FILE)) {
-      const raw = fs.readFileSync(ROOMS_FILE, "utf8");
-      rooms = JSON.parse(raw) || {};
-      console.log(`Loaded ${Object.keys(rooms).length} rooms from rooms.json`);
-    } else {
-      rooms = {};
-    }
-  } catch (err) {
-    console.error("Error loading rooms file:", err);
-    rooms = {};
-  }
-}
-
-function saveRooms() {
-  try {
-    fs.writeFileSync(ROOMS_FILE, JSON.stringify(rooms, null, 2), "utf8");
-  } catch (err) {
-    console.error("Error writing rooms file:", err);
-  }
-}
-
-// Ensure a room exists
-function getOrCreateRoom(roomId) {
-  if (!rooms[roomId]) {
-    rooms[roomId] = {
-      id: roomId,
-      roadmap: null,
-      iterations: [],
-      features: [],
-      updatedAt: new Date().toISOString()
-    };
-  }
-  return rooms[roomId];
-}
+// Room ID pattern (simple hardening)
+const ROOM_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 
 // ---- Setup Express + Socket.IO ----
 loadRooms();
@@ -68,125 +34,57 @@ app.use(express.json());
 // Simple REST endpoint for debugging
 app.get("/api/rooms/:roomId", (req, res) => {
   const roomId = req.params.roomId;
-  const room = rooms[roomId];
+  const room = getRooms()[roomId];
   if (!room) return res.status(404).json({ error: "Room not found" });
   res.json(room);
 });
 
-// ---- Socket.IO ----
-io.on("connection", (socket) => {
-  console.log("Client connected", socket.id);
+// ---- Validation helpers ----
+function validateRoomId(roomId) {
+  if (!roomId) return "roomId is required.";
+  if (!ROOM_ID_PATTERN.test(roomId)) {
+    return "Invalid roomId format. Use letters, numbers, '-', '_' only, max 64 chars.";
+  }
+  return null;
+}
 
-  // Client joins a room
-  socket.on("room:join", ({ roomId }) => {
-    if (!roomId) {
-      socket.emit("error", { message: "roomId is required" });
-      return;
-    }
+function validateRoadmapInput(input) {
+  const errors = [];
+  if (!input) {
+    errors.push("Missing roadmapInput.");
+    return errors;
+  }
 
-    socket.join(roomId);
-    const room = getOrCreateRoom(roomId);
+  const { startDate, endDate, iterLengthDays, numIterations, piSize } = input;
 
-    console.log(`Socket ${socket.id} joined room ${roomId}`);
+  if (!startDate || !endDate) {
+    errors.push("Start date and end date are required.");
+  }
 
-    // Send current room state to the newly joined client
-    socket.emit("room:state", room);
-  });
+  const iterLength = Number(iterLengthDays);
+  const numIter = Number(numIterations);
+  const pi = Number(piSize);
 
-  // Create/update roadmap + regenerate iterations
-  socket.on("room:setRoadmap", ({ roomId, roadmapInput }) => {
-    const room = getOrCreateRoom(roomId);
-    if (!roadmapInput) return;
+  if (!Number.isInteger(iterLength) || iterLength <= 0) {
+    errors.push("Iteration length must be a positive integer.");
+  }
+  if (!Number.isInteger(numIter) || numIter <= 0) {
+    errors.push("Number of iterations must be a positive integer.");
+  }
+  if (!Number.isInteger(pi) || pi <= 0) {
+    errors.push("PI size must be a positive integer.");
+  }
 
-    const {
-      name,
-      startDate,
-      endDate,
-      iterLengthDays,
-      numIterations,
-      piSize
-    } = roadmapInput;
+  // Basic sanity limits
+  if (numIter > 200) {
+    errors.push("Number of iterations is too large (> 200).");
+  }
+  if (iterLength > 365) {
+    errors.push("Iteration length is too large (> 365 days).");
+  }
 
-    // Basic validation
-    if (!startDate || !endDate || !iterLengthDays || !numIterations || !piSize) {
-      return;
-    }
-
-    room.roadmap = {
-      id: room.roadmap?.id || `roadmap_${roomId}`,
-      name: name || room.roadmap?.name || roomId,
-      startDate,
-      endDate,
-      iterLengthDays,
-      numIterations,
-      piSize
-    };
-
-    // Generate iterations based on roadmap
-    room.iterations = generateIterations(room.roadmap);
-
-    // Clean up feature assignments to non-existing iterations
-    const validIterIds = new Set(room.iterations.map((it) => it.id));
-    room.features.forEach((f) => {
-      f.iterationIds = (f.iterationIds || []).filter((id) =>
-        validIterIds.has(id)
-      );
-    });
-
-    room.updatedAt = new Date().toISOString();
-    rooms[roomId] = room;
-    saveRooms();
-
-    io.to(roomId).emit("room:state", room);
-  });
-
-  // Add feature
-  socket.on("room:addFeature", ({ roomId, featureInput }) => {
-    const room = getOrCreateRoom(roomId);
-    if (!featureInput || !featureInput.name) return;
-
-    const featureId = `feat_${Math.random().toString(36).slice(2, 9)}`;
-    const roadmapId = room.roadmap?.id || `roadmap_${roomId}`;
-
-    const newFeature = {
-      id: featureId,
-      roadmapId,
-      name: featureInput.name,
-      type: featureInput.type || "Feature",
-      estimate: featureInput.estimate || "",
-      priority: featureInput.priority || "",
-      description: featureInput.description || "",
-      iterationIds: featureInput.iterationIds || []
-    };
-
-    room.features.push(newFeature);
-    room.updatedAt = new Date().toISOString();
-    rooms[roomId] = room;
-    saveRooms();
-
-    io.to(roomId).emit("room:state", room);
-  });
-
-  // Update feature's iteration assignments
-  socket.on("room:updateFeatureIterations", ({ roomId, featureId, iterationIds }) => {
-    const room = getOrCreateRoom(roomId);
-    const feature = room.features.find((f) => f.id === featureId);
-    if (!feature) return;
-    const validIterIds = new Set(room.iterations.map((it) => it.id));
-    feature.iterationIds = (iterationIds || []).filter((id) =>
-      validIterIds.has(id)
-    );
-    room.updatedAt = new Date().toISOString();
-    rooms[roomId] = room;
-    saveRooms();
-
-    io.to(roomId).emit("room:state", room);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("Client disconnected", socket.id);
-  });
-});
+  return errors;
+}
 
 // Iteration generation utility
 function generateIterations(roadmap) {
@@ -203,9 +101,9 @@ function generateIterations(roadmap) {
 
     const piIndex = Math.ceil(i / roadmap.piSize);
     result.push({
-      id: `iter_${i}`,
+      id: `iter_${roadmap.id}_${i}`, // namespace by roadmap
       roadmapId: roadmap.id,
-      name: `Iteration ${i}`,
+      name: `Iteration ${i}`,       // UI renames to Sprint when needed
       startDate: iterStart.toISOString().slice(0, 10),
       endDate: iterEnd.toISOString().slice(0, 10),
       seq: i,
@@ -218,6 +116,142 @@ function generateIterations(roadmap) {
 
   return result;
 }
+
+// ---- Socket.IO ----
+io.on("connection", (socket) => {
+  console.log("Client connected", socket.id);
+
+  // Client joins a room
+  socket.on("room:join", ({ roomId }) => {
+    const idError = validateRoomId(roomId);
+    if (idError) {
+      socket.emit("room:error", { message: idError });
+      return;
+    }
+
+    socket.join(roomId);
+    const room = getOrCreateRoom(roomId);
+
+    console.log(`Socket ${socket.id} joined room ${roomId}`);
+
+    // Send current room state to the newly joined client
+    socket.emit("room:state", room);
+  });
+
+  // Create/update roadmap + regenerate iterations
+  socket.on("room:setRoadmap", ({ roomId, roadmapInput }) => {
+    const idError = validateRoomId(roomId);
+    if (idError) {
+      socket.emit("room:error", { message: idError });
+      return;
+    }
+
+    const errors = validateRoadmapInput(roadmapInput);
+    if (errors.length) {
+      socket.emit("room:error", { message: errors.join(" ") });
+      return;
+    }
+
+    const room = updateRoom(roomId, (room) => {
+      const {
+        name,
+        startDate,
+        endDate,
+        iterLengthDays,
+        numIterations,
+        piSize
+      } = roadmapInput;
+
+      room.roadmap = {
+        id: room.roadmap?.id || `roadmap_${roomId}`,
+        name: name || room.roadmap?.name || roomId,
+        startDate,
+        endDate,
+        iterLengthDays: Number(iterLengthDays),
+        numIterations: Number(numIterations),
+        piSize: Number(piSize)
+      };
+
+      // Generate iterations based on roadmap
+      room.iterations = generateIterations(room.roadmap);
+
+      // Clean up feature assignments to non-existing iterations
+      const validIterIds = new Set(room.iterations.map((it) => it.id));
+      room.features.forEach((f) => {
+        f.iterationIds = (f.iterationIds || []).filter((id) =>
+          validIterIds.has(id)
+        );
+      });
+    });
+
+    io.to(roomId).emit("room:state", room);
+  });
+
+  // (Optional) feature-related events are kept for future use but unused by UI now.
+  socket.on("room:addFeature", ({ roomId, featureInput }) => {
+    const idError = validateRoomId(roomId);
+    if (idError) {
+      socket.emit("room:error", { message: idError });
+      return;
+    }
+
+    // Very lightweight check – full validation could be added if you re-enable feature UI
+    if (!featureInput || !featureInput.name) {
+      socket.emit("room:error", { message: "Feature name is required." });
+      return;
+    }
+
+    const room = updateRoom(roomId, (room) => {
+      const featureId = `feat_${Math.random().toString(36).slice(2, 9)}`;
+      const roadmapId = room.roadmap?.id || `roadmap_${roomId}`;
+      const validIterIds = new Set(room.iterations.map((it) => it.id));
+
+      const iterationIds = (featureInput.iterationIds || []).filter((id) =>
+        validIterIds.has(id)
+      );
+
+      const newFeature = {
+        id: featureId,
+        roadmapId,
+        name: featureInput.name.trim(),
+        type: featureInput.type || "Feature",
+        estimate: featureInput.estimate || "",
+        priority: featureInput.priority || "",
+        description: featureInput.description || "",
+        iterationIds
+      };
+
+      room.features.push(newFeature);
+    });
+
+    io.to(roomId).emit("room:state", room);
+  });
+
+  socket.on("room:updateFeatureIterations", ({ roomId, featureId, iterationIds }) => {
+    const idError = validateRoomId(roomId);
+    if (idError) {
+      socket.emit("room:error", { message: idError });
+      return;
+    }
+
+    const room = updateRoom(roomId, (room) => {
+      const feature = room.features.find((f) => f.id === featureId);
+      if (!feature) {
+        return;
+      }
+      const validIterIds = new Set(room.iterations.map((it) => it.id));
+      feature.iterationIds = (iterationIds || []).filter((id) =>
+        validIterIds.has(id)
+      );
+    });
+
+    io.to(roomId).emit("room:state", room);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected", socket.id);
+  });
+});
 
 // Start server
 server.listen(PORT, () => {
