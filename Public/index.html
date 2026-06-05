@@ -1,265 +1,661 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Roadmap Planner (Agile / SAFe)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Tailwind via CDN (for local / prototype use) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roadmap Planner · CRS Global Analytics Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:         #0a1628;
+      --navy-alt:     #262836;
+      --teal:         #007585;
+      --teal-hover:   #006575;
+      --teal-light:   #29b0c3;
+      --teal-bg:      #eef6f7;
+      --teal-mid:     #e5eff0;
+      --teal-border:  #cddbde;
+
+      --gray-01: #46535e;
+      --gray-02: #5d6d78;
+      --gray-03: #82939a;
+      --gray-04: #acc0c4;
+      --gray-05: #cddbde;
+      --gray-06: #e5eff0;
+      --gray-07: #eef6f7;
+      --gray-08: #f9fcfc;
+
+      --error:       #ea2238;
+      --error-bg:    #fcdcdc;
+      --warning:     #ffa600;
+      --warning-bg:  #fff6b7;
+      --success:     #12a88a;
+      --success-bg:  #c1f2e9;
+      --info:        #0055a8;
+      --info-bg:     #cceaf5;
+
+      --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+      --on-dark-60: rgba(255,255,255,0.60);
+      --on-dark-50: rgba(255,255,255,0.50);
+      --on-dark-40: rgba(255,255,255,0.40);
+      --on-dark-20: rgba(255,255,255,0.20);
+      --on-dark-10: rgba(255,255,255,0.10);
+      --on-dark-05: rgba(255,255,255,0.05);
+
+      --r-sm:   6px;
+      --r-md:   8px;
+      --r-lg:  12px;
+      --r-xl:  16px;
+      --r-2xl: 20px;
+      --r-pill: 999px;
+    }
+
+    html { font-family: var(--font-sans); font-size: 16px; }
+    body {
+      background: var(--gray-08);
+      color: #1a2430;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .shell {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* Sidebar (light) */
+
+    .sidebar {
+      width: 240px;
+      background: white;
+      border-right: 1px solid #dde3e8;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.2s ease;
+    }
+
+    .sidebar.collapsed {
+      width: 56px;
+    }
+
+    .sidebar-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #dde3e8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--teal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: white;
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--teal);
+      white-space: nowrap;
+    }
+
+    .sidebar-toggle {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid var(--gray-05);
+      background: var(--gray-08);
+      color: var(--gray-02);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .sidebar-nav {
+      padding: 10px 8px;
+      flex: 1;
+    }
+
+    .sidebar-nav button {
+      width: 100%;
+      border-radius: 8px;
+      border: none;
+      padding: 8px 10px;
+      background: transparent;
+      color: var(--gray-02);
+      font-size: 13px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .sidebar-nav button.active {
+      background: var(--teal-bg);
+      color: var(--teal);
+    }
+
+    .sidebar-nav button:hover:not(.active)) {
+      background: var(--gray-07);
+      color: var(--gray-01);
+    }
+
+    .sidebar-footer {
+      padding: 10px 12px;
+      border-top: 1px solid #dde3e8;
+      font-size: 11px;
+      color: var(--gray-03);
+    }
+
+    .sidebar.collapsed .sidebar-title {
+      display: none;
+    }
+
+    .sidebar.collapsed .sidebar-nav button span.label {
+      display: none;
+    }
+
+    /* Main content (light) */
+
+    .main {
+      flex: 1;
+      padding: 24px;
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .page-header-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 6px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      color: #1a2430;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--gray-02);
+      max-width: 520px;
+    }
+
+    .page-main-grid {
+      margin-top: 24px;
+      /* single column (no right card) */
+    }
+
+    /* Card (light) */
+
+    .card-light {
+      background: white;
+      border-radius: var(--r-xl);
+      border: 1px solid #dde3e8;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      gap: 12px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a2430;
+    }
+
+    .section-subtext {
+      font-size: 11px;
+      color: var(--gray-02);
+    }
+
+    /* Form */
+
+    .form-grid-1 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 700px) {
+      .form-grid {
+        grid-template-columns: 1fr;
       }
     }
-  </script>
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-02);
+    }
+
+    .form-input,
+    .form-select {
+      background: white;
+      border: 1px solid #dde3e8;
+      border-radius: var(--r-md);
+      padding: 8px 10px;
+      font-size: 13px;
+      color: #1a2430;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+    }
+
+    .form-input::placeholder {
+      color: var(--gray-03);
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(0,117,133,0.18);
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 13px;
+      border-radius: var(--r-lg);
+      padding: 9px 18px;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--teal);
+      color: white;
+      box-shadow: 0 4px 16px rgba(0,117,133,0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--teal-hover);
+      transform: translateY(-1px);
+    }
+
+    .error-text {
+      font-size: 11px;
+      color: var(--error);
+      margin-top: 4px;
+    }
+
+    .status-banner {
+      margin-top: 8px;
+      border-radius: var(--r-lg);
+      padding: 8px 12px;
+      font-size: 12px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-error {
+      background: var(--error-bg);
+      border: 1px solid rgba(234,34,56,0.3);
+      color: #991b1b;
+    }
+
+    /* Iterations / Sprints */
+
+    .section-heading-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+
+    .section-heading-row h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .iterations-row {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .iter-card {
+      min-width: 190px;
+      border-radius: var(--r-xl);
+      border: 1px solid #dde3e8;
+      background: #f9fafb;
+      padding: 10px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+
+    .iter-card:hover {
+      background: #eef6f7;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    .iter-card.selected {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 1px rgba(0,117,133,0.7);
+      background: #e5eff0;
+    }
+
+    .iter-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .iter-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: #111827;
+    }
+
+    .iter-dates {
+      font-size: 11px;
+      color: var(--gray-02);
+    }
+
+    .iter-meta {
+      font-size: 11px;
+      color: var(--gray-03);
+      margin-top: 2px;
+    }
+
+    .iter-features {
+      font-size: 11px;
+      color: var(--gray-02);
+      margin-top: 4px;
+    }
+
+    .iter-plus-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1px solid var(--gray-05);
+      background: white;
+      color: var(--gray-02);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .iter-plus-btn:hover {
+      background: var(--teal);
+      color: white;
+      border-color: var(--teal);
+      transform: translateY(-1px);
+    }
+
+    .iter-empty {
+      font-size: 11px;
+      color: var(--gray-03);
+      font-style: italic;
+      margin-top: 4px;
+    }
+
+    /* Details panel (light) */
+
+    .details-panel {
+      margin-top: 12px;
+      border-radius: var(--r-xl);
+      border: 1px solid #dde3e8;
+      background: white;
+      overflow: hidden;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+
+    .details-header {
+      background: var(--teal);
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .details-header h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .details-header span {
+      font-size: 11px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .details-body {
+      padding: 12px 14px;
+      font-size: 12px;
+      color: var(--gray-02);
+    }
+
+    .details-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .details-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--gray-03);
+    }
+
+    .details-meta {
+      font-size: 11px;
+      color: var(--gray-01);
+    }
+  </style>
 </head>
-<body class="h-full bg-slate-950 text-slate-100">
-  <div class="max-w-6xl mx-auto px-4 py-6">
-    <h1 class="text-2xl font-semibold text-slate-50 tracking-tight">
-      Roadmap Planner
-    </h1>
-    <p class="text-sm text-slate-400 mt-1">
-      Define roadmap dates and iterations, then add features and assign them to one or more sprints/iterations.
-      This version syncs with a Node.js backend via Socket.IO and persists to disk.
-    </p>
+<body>
 
-    <div id="roomInfo" class="text-xs text-slate-400 mt-2"></div>
-
-    <div class="mt-4 grid gap-6 lg:grid-cols-[1.4fr,1fr]">
-      <!-- LEFT: Roadmap + Iterations -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-xl shadow-black/60">
-        <div class="flex items-center justify-between gap-3 mb-3">
-          <h2 class="text-lg font-semibold text-slate-50">Roadmap &amp; Iterations</h2>
-          <span class="inline-flex items-center rounded-full border border-slate-700 px-2 py-0.5 text-[0.68rem] text-slate-400 uppercase tracking-wide">
-            Agile / SAFe
-          </span>
-        </div>
-
-        <div id="roadmap-form" class="space-y-3">
-          <div>
-            <label for="roadmapName" class="block text-xs font-medium text-slate-400 mb-1">
-              Roadmap name
-            </label>
-            <input
-              id="roadmapName"
-              type="text"
-              placeholder="e.g. 2026 H1 Platform Roadmap"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label for="startDate" class="block text-xs font-medium text-slate-400 mb-1">
-                Start date
-              </label>
-              <input
-                id="startDate"
-                type="date"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label for="endDate" class="block text-xs font-medium text-slate-400 mb-1">
-                End date
-              </label>
-              <input
-                id="endDate"
-                type="date"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label for="iterLength" class="block text-xs font-medium text-slate-400 mb-1">
-                Iteration length (days)
-              </label>
-              <input
-                id="iterLength"
-                type="number"
-                min="1"
-                value="14"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label for="numIterations" class="block text-xs font-medium text-slate-400 mb-1">
-                Number of iterations
-              </label>
-              <input
-                id="numIterations"
-                type="number"
-                min="1"
-                value="5"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-end">
-            <div>
-              <label for="piSize" class="block text-xs font-medium text-slate-400 mb-1">
-                Program Increment size (iterations)
-              </label>
-              <input
-                id="piSize"
-                type="number"
-                min="1"
-                value="5"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div class="flex justify-end">
-              <button
-                id="generateIterationsBtn"
-                class="inline-flex items-center rounded-full bg-blue-600 px-3.5 py-1.5 text-sm font-medium text-white shadow-lg shadow-blue-700/40 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
-              >
-                Generate iterations
-              </button>
-            </div>
-          </div>
-
-          <div
-            id="roadmapError"
-            class="hidden text-xs text-red-400 mt-1"
-          ></div>
-        </div>
-
-        <h3 class="mt-5 mb-2 text-sm font-semibold text-slate-100">
-          Iterations
-        </h3>
-        <div
-          id="iterationsContainer"
-          class="flex gap-3 overflow-x-auto pb-2"
-        ></div>
-        <div
-          id="iterationsEmpty"
-          class="text-xs text-slate-500 italic"
-        >
-          No iterations yet. Set dates and click “Generate iterations”.
-        </div>
-
-        <div id="iterationDetails" class="mt-3"></div>
+<div class="shell">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar" data-collapsed="false">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">RP</div>
+        <div class="sidebar-title">Roadmap Planner</div>
       </div>
-
-      <!-- RIGHT: Features -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-xl shadow-black/60">
-        <div class="flex items-center justify-between gap-3 mb-3">
-          <h2 class="text-lg font-semibold text-slate-50">Features</h2>
-          <span
-            id="featuresSummary"
-            class="text-xs text-slate-400"
-          >0 features</span>
-        </div>
-
-        <div id="featureForm" class="space-y-3">
-          <div>
-            <label for="featureName" class="block text-xs font-medium text-slate-400 mb-1">
-              Feature name
-            </label>
-            <input
-              id="featureName"
-              type="text"
-              placeholder="e.g. Payments gateway integration"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label for="featureType" class="block text-xs font-medium text-slate-400 mb-1">
-              Type
-            </label>
-            <select
-              id="featureType"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Feature">Feature</option>
-              <option value="Epic">Epic</option>
-              <option value="Enabler">Enabler</option>
-            </select>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label for="featureEstimate" class="block text-xs font-medium text-slate-400 mb-1">
-                Estimate (pts / t-shirt)
-              </label>
-              <input
-                id="featureEstimate"
-                type="text"
-                placeholder="e.g. 20 or M"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label for="featurePriority" class="block text-xs font-medium text-slate-400 mb-1">
-                Priority / WSJF
-              </label>
-              <input
-                id="featurePriority"
-                type="text"
-                placeholder="e.g. High or 65"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label for="featureDescription" class="block text-xs font-medium text-slate-400 mb-1">
-              Description
-            </label>
-            <textarea
-              id="featureDescription"
-              placeholder="Short description, business outcome, acceptance criteria (optional)"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[60px]"
-            ></textarea>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">
-              Assign to iterations (optional)
-            </label>
-            <div
-              id="iterationMultiSelect"
-              class="flex flex-wrap gap-2 mt-1"
-            ></div>
-          </div>
-
-          <div class="flex gap-2 mt-1">
-            <button
-              id="addFeatureBtn"
-              class="inline-flex items-center rounded-full bg-blue-600 px-3.5 py-1.5 text-sm font-medium text-white shadow-lg shadow-blue-700/40 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
-            >
-              Add feature
-            </button>
-            <button
-              id="clearFormBtn"
-              type="button"
-              class="inline-flex items-center rounded-full border border-slate-700 bg-transparent px-3.5 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:ring-offset-0"
-            >
-              Clear
-            </button>
-          </div>
-
-          <div
-            id="featureError"
-            class="hidden text-xs text-red-400"
-          ></div>
-        </div>
-
-        <div
-          id="featuresList"
-          class="mt-4 max-h-60 overflow-y-auto border-t border-slate-800 pt-3 space-y-2"
-        ></div>
-      </div>
+      <button id="toggleSidebarBtn" class="sidebar-toggle" title="Collapse sidebar">‹</button>
     </div>
-  </div>
+    <nav class="sidebar-nav">
+      <button id="navRoadmap" class="active">
+        <span class="label">Roadmap Planner</span>
+      </button>
+      <button id="navCalendar">
+        <span class="label">Calendar Planner</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div id="roomInfo"></div>
+    </div>
+  </aside>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="app.js"></script>
+  <!-- Main -->
+  <main class="main">
+    <!-- ROADMAP VIEW -->
+    <section id="viewRoadmap">
+      <div>
+        <div class="page-header-eyebrow">Commercial Risk Solutions · Internal</div>
+        <h1 class="page-title">Roadmap &amp; Delivery Planner</h1>
+        <p class="page-subtitle">
+          Define roadmap dates and
+          <span id="modeLabelInline">iterations</span>,
+          then plan work across <span id="modeLabelTitle">Iterations</span> or Sprints, aligned with Agile or SAFe.
+        </p>
+      </div>
+
+      <div class="page-main-grid">
+        <div class="card-light">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Roadmap &amp; <span id="iterationsTitle">Iterations</span></h2>
+              <div class="section-subtext">Configure timeframe and cadence for this roadmap.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <label for="methodologySelect" class="form-label" style="font-size:10px;">Mode</label>
+              <select id="methodologySelect" class="form-select" style="max-width:120px;font-size:11px;">
+                <option value="safe">SAFe</option>
+                <option value="agile">Agile</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-1">
+            <div class="form-group">
+              <label for="roadmapName" class="form-label">Roadmap name</label>
+              <input id="roadmapName" type="text" class="form-input" placeholder="e.g. 2026 H1 Platform Roadmap" />
+            </div>
+          </div>
+
+          <div class="form-grid" style="margin-top:8px;">
+            <div class="form-group">
+              <label for="startDate" class="form-label">Start date</label>
+              <input id="startDate" type="date" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="endDate" class="form-label">End date</label>
+              <input id="endDate" type="date" class="form-input" />
+            </div>
+          </div>
+
+          <div class="form-grid" style="margin-top:8px;">
+            <div class="form-group">
+              <label id="iterLengthLabel" for="iterLength" class="form-label">Iteration length (days)</label>
+              <input id="iterLength" type="number" min="1" value="14" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label id="numIterationsLabel" for="numIterations" class="form-label">Number of iterations</label>
+              <input id="numIterations" type="number" min="1" value="5" class="form-input" />
+            </div>
+          </div>
+
+          <div class="form-grid" style="margin-top:8px;">
+            <div class="form-group">
+              <label for="piSize" class="form-label">Program Increment size (iterations)</label>
+              <input id="piSize" type="number" min="1" value="5" class="form-input" />
+            </div>
+            <div class="form-actions">
+              <button id="generateIterationsBtn" class="btn btn-primary">Generate</button>
+            </div>
+          </div>
+
+          <div id="roadmapError" class="error-text" style="display:none;"></div>
+          <div id="roadmapServerError" class="status-banner status-error">
+            <span>⚠</span>
+            <span id="roadmapServerErrorText"></span>
+          </div>
+
+          <div class="section-heading-row">
+            <h3 id="iterationsHeadingLabel">Iterations</h3>
+            <span class="section-subtext">Click “+” on a card to plan work for that Iteration/Sprint.</span>
+          </div>
+
+          <div id="iterationsContainer" class="iterations-row"></div>
+          <div id="iterationsEmpty" class="iter-empty">
+            No iterations yet. Set dates and click “Generate”.
+          </div>
+
+          <div id="iterationDetails" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALENDAR VIEW (placeholder) -->
+    <section id="viewCalendar" style="display:none;margin-top:16px;">
+      <div>
+        <div class="page-header-eyebrow">Planning · Calendar</div>
+        <h1 class="page-title">Calendar Planner</h1>
+        <p class="page-subtitle">
+          Calendar-based view of roadmaps and
+          <span id="modeLabelInlineCalendar">iterations</span>. This is a placeholder for future scheduling and drag-and-drop planning.
+        </p>
+      </div>
+      <!-- You can add a simple text or future content here. No card needed now. -->
+    </section>
+  </main>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
